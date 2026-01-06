@@ -1,4 +1,4 @@
-name: Build Universal ESP Fixed
+name: Build ESP Master
 
 on:
   workflow_dispatch:
@@ -10,38 +10,36 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Theos & iOS SDK
+      - name: Setup Theos & SDK
         run: |
           git clone --recursive https://github.com/theos/theos.git ~/theos
-          curl -L -O https://github.com/theos/sdks/archive/refs/heads/master.zip
-          unzip -o master.zip
+          curl -L https://github.com/theos/sdks/archive/master.zip -o sdks.zip
+          unzip -q sdks.zip
           mv sdks-master/*.sdk ~/theos/sdks/
-          echo "THEOS=~/theos" >> $GITHUB_ENV
+          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
 
-      - name: ⚙️ Force Organize & Unzip
+      - name: ⚙️ التنظيف الاستراتيجي للملفات
         run: |
-          # [span_9](start_span)فك ضغط المشروع مع تجاهل أخطاء الرموز الصينية[span_9](end_span)
+          mkdir -p ESP SDK
           unzip -o mini.zip || true
           
-          # إنشاء مجلدات نظيفة للمترجم لتجنب مشاكل المسارات الطويلة
-          mkdir -p Project_ESP Project_SDK
+          # نقل ملفات ESP بذكاء وتجاهل الأسماء الصينية المتبقية
+          find . -path "*/ESP/*" -type f \( -name "*.mm" -o -name "*.m" -o -name "*.cpp" -o -name "*.h" -o -name "*.hpp" \) -not -name "*[!-a-zA-Z0-9._/]*" -exec cp {} ESP/ \; 2>/dev/null || true
           
-          # نقل محتويات ESP و SDK إلى المجلدات الجديدة برمجياً
-          cp -R mini/mini/ESP/* Project_ESP/ 2>/dev/null || cp -R ESP/* Project_ESP/ || true
-          cp -R mini/mini/SDK/* Project_SDK/ 2>/dev/null || cp -R SDK/* Project_SDK/ || true
+          # نقل ملفات SDK 4.2 المحدثة
+          find . -path "*/SDK/*" -type f -exec cp {} SDK/ \; 2>/dev/null || true
           
-          # التأكد من بقاء ملفات الإعداد في الواجهة
-          find . -name "control" -exec cp {} . \;
-          find . -name "App.plist" -exec cp {} . \;
+          # التأكد من وجود JRMemory.framework في مكانه
+          find . -name "JRMemory.framework" -type d -exec cp -R {} ESP/ \; 2>/dev/null || true
 
-      - name: Build Package
+      - name: 🚀 بدء البناء
         run: |
-          chmod +x $THEOS/bin/*
-          # [span_10](start_span)تنفيذ البناء النهائي بصيغة rootless[span_10](end_span)
+          export THEOS=$HOME/theos
+          chmod -R +x $THEOS/bin
           make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
-
-      - name: Upload Finished Artifact
+          
+      - name: 📦 الرفع
         uses: actions/upload-artifact@v4
         with:
-          name: Universal_ESP_Dylib
+          name: ESP_Dylib_Ready
           path: packages/*.deb
