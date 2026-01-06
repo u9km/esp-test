@@ -1,4 +1,4 @@
-name: Build All-Versions ESP
+name: Build ESP Internal SDK
 
 on:
   workflow_dispatch:
@@ -18,30 +18,30 @@ jobs:
           mv sdks-master/*.sdk ~/theos/sdks/
           echo "THEOS=~/theos" >> $GITHUB_ENV
 
-      - name: ⚙️ Smart Organize
+      - name: ⚙️ Unzip Project & SDK
         run: |
-          mkdir -p ESP SDK
-          # فك ملف المشروع mini.zip
+          # فك ملف المشروع الذي يحتوي الآن على الـ SDK داخله
           if [ -f "mini.zip" ]; then
-            unzip -o mini.zip
-            cp -R mini/mini/ESP/* ESP/ 2>/dev/null || cp -R mini/ESP/* ESP/ || cp -R ESP/* ESP/
+            unzip -o mini.zip -d mini
           fi
-          # فك ملف الـ SDK
-          if [ -f "PG_SAQER_(v4.2.0)_iOS.zip" ]; then
-            unzip -o "PG_SAQER_(v4.2.0)_iOS.zip" -d SDK/
-          fi
-          # نقل ملفات التكوين للواجهة إذا فُككت بالداخل
-          mv ESP/control . 2>/dev/null || true
-          mv ESP/App.plist . 2>/dev/null || true
-          ls -R
+          
+          # التأكد من وجود ملفات الإعداد في الواجهة لنجاح البناء
+          # سيتم البحث عنها داخل المجلد المفكوك ونقلها للواجهة
+          find mini -name "control" -exec mv {} . \;
+          find mini -name "App.plist" -exec mv {} . \;
+          
+          echo "Checking internal structure..."
+          ls -R mini
 
       - name: Build Package
         run: |
           chmod +x $THEOS/bin/*
+          # تنفيذ البناء بناءً على المسارات الجديدة
           make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
 
-      - name: Upload Finished Artifact
+      - name: Upload Artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: Universal-ESP-Output
+          name: Internal-SDK-ESP
           path: packages/*.deb
