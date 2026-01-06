@@ -1,0 +1,47 @@
+name: Build All-Versions ESP
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Theos & iOS SDK
+        run: |
+          git clone --recursive https://github.com/theos/theos.git ~/theos
+          curl -L -O https://github.com/theos/sdks/archive/refs/heads/master.zip
+          unzip master.zip
+          mv sdks-master/*.sdk ~/theos/sdks/
+          echo "THEOS=~/theos" >> $GITHUB_ENV
+
+      - name: ⚙️ Smart Organize
+        run: |
+          mkdir -p ESP SDK
+          # فك ملف المشروع mini.zip
+          if [ -f "mini.zip" ]; then
+            unzip -o mini.zip
+            cp -R mini/mini/ESP/* ESP/ 2>/dev/null || cp -R mini/ESP/* ESP/ || cp -R ESP/* ESP/
+          fi
+          # فك ملف الـ SDK
+          if [ -f "PG_SAQER_(v4.2.0)_iOS.zip" ]; then
+            unzip -o "PG_SAQER_(v4.2.0)_iOS.zip" -d SDK/
+          fi
+          # نقل ملفات التكوين للواجهة إذا فُككت بالداخل
+          mv ESP/control . 2>/dev/null || true
+          mv ESP/App.plist . 2>/dev/null || true
+          ls -R
+
+      - name: Build Package
+        run: |
+          chmod +x $THEOS/bin/*
+          make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+
+      - name: Upload Finished Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Universal-ESP-Output
+          path: packages/*.deb
