@@ -1,4 +1,3 @@
-# تصحيح مسار الثيوس للعمل على GitHub Actions
 export THEOS = $(HOME)/theos
 
 ARCHS = arm64
@@ -12,26 +11,25 @@ include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = App
 
-# المكتبات الضرورية (يجب أن تظل كما هي)
 App_FRAMEWORKS = IOKit UIKit Foundation Security QuartzCore CoreGraphics CoreText AVFoundation Accelerate GLKit SystemConfiguration GameController Metal MetalKit
 App_EXTRA_FRAMEWORKS = JRMemory
 
-# إعدادات المترجم لربط ملفاتك
-App_CCFLAGS = -w -std=gnu++17 -fno-rtti -fno-exceptions -DNDEBUG
+# تم إضافة -I. لضمان العثور على الملفات التي تطلب مسار "ESP/..."
 App_CFLAGS = -w -fobjc-arc \
+    -I. \
     -I./ESP \
     -I./ESP/imgui \
     -I./ESP/KittyMemory \
     -I./ESP/JRMemory.framework/Headers \
     -I./SDK
 
-# جلب ملفات الكود من مجلداتك بعد فك الضغط
-App_FILES = $(wildcard ESP/*.mm) \
+App_CCFLAGS = -w -std=gnu++17 -fno-rtti -fno-exceptions -DNDEBUG
+
+# جلب الملفات البرمجية
+App_FILES = metalbiew.mm \
+            $(wildcard ESP/*.mm) \
             $(wildcard ESP/imgui/*.cpp) \
-            $(wildcard ESP/KittyMemory/*.cpp) \
-            $(wildcard SDK/*.cpp) \
-            $(wildcard SDK/*.mm) \
-            metalbiew.mm
+            $(wildcard SDK/*.cpp)
 
 App_LDFLAGS += -Wl,-segalign,4000
 
