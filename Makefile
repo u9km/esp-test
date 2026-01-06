@@ -1,5 +1,6 @@
 export THEOS=/var/mobile/theos
 
+# المعماريات وإصدار النظام المستهدف لضمان الاستقرار
 ARCHS = arm64
 TARGET = iphone:clang:latest:14.0
 
@@ -11,26 +12,37 @@ include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = App
 
-# المكتبات الضرورية لمنع الكراش
+# المكتبات الضرورية لمنع انهيار الواجهة الرسومية (ImGui)
 App_FRAMEWORKS = IOKit UIKit Foundation Security QuartzCore CoreGraphics CoreText AVFoundation Accelerate GLKit SystemConfiguration GameController Metal MetalKit
 App_EXTRA_FRAMEWORKS = JRMemory
 
+# إعدادات المترجم لدعم C++17
 App_CCFLAGS = -w -std=gnu++17 -fno-rtti -fno-exceptions -DNDEBUG -Wno-module-import-in-extern-c
 
-# مسارات التضمين معدلة لتشمل مجلد SDK داخل mini
+# مسارات التضمين للمجلدات داخل المشروع (المسارات المباشرة بعد فك الضغط)
 App_CFLAGS = -w -fobjc-arc \
-    -I./mini/mini/ESP \
-    -I./mini/mini/ESP/imgui \
-    -I./mini/mini/ESP/KittyMemory \
-    -I./mini/mini/ESP/JRMemory.framework/Headers \
-    -I./mini/mini/SDK
+    -I./Project_ESP \
+    -I./Project_ESP/imgui \
+    -I./Project_ESP/KittyMemory \
+    -I./Project_ESP/HOST7 \
+    -I./Project_ESP/1 \
+    -I./Project_ESP/防禁令 \
+    -I./Project_ESP/JRMemory.framework/Headers \
+    -I./Project_SDK
 
-# تجميع الملفات من المسارات الجديدة داخل المجلد المضغوط
-App_FILES = $(wildcard mini/mini/ESP/*.mm) \
-            $(wildcard mini/mini/ESP/*.cpp) \
-            $(wildcard mini/mini/ESP/imgui/*.cpp) \
-            $(wildcard mini/mini/SDK/*.cpp)
+# تجميع الملفات البرمجية من المجلدات التي سيتم ترتيبها بواسطة YAML
+App_FILES = $(wildcard Project_ESP/*.mm) \
+            $(wildcard Project_ESP/*.m) \
+            $(wildcard Project_ESP/*.cpp) \
+            $(wildcard Project_ESP/imgui/*.cpp) \
+            $(wildcard Project_ESP/imgui/*.mm) \
+            $(wildcard Project_ESP/KittyMemory/*.cpp) \
+            $(wildcard Project_ESP/HOST7/*.m) \
+            $(wildcard Project_ESP/1/*.mm) \
+            $(wildcard Project_ESP/防禁令/*.mm) \
+            $(wildcard Project_SDK/*.cpp)
 
+# أهم سطر لمنع الكراش في النسخ بدون جلبريك
 App_LDFLAGS += -Wl,-segalign,4000
 
 include $(THEOS_MAKE_PATH)/tweak.mk
