@@ -1,4 +1,4 @@
-name: Build ESP Master Fix
+name: Final Build Fix
 
 on:
   workflow_dispatch:
@@ -18,18 +18,23 @@ jobs:
           mv sdks-master/*.sdk ~/theos/sdks/
           echo "THEOS=$HOME/theos" >> $GITHUB_ENV
 
-      - name: ⚙️ تنظيم المسارات وفك الضغط
+      - name: ⚙️ ترتيب الملفات وحل خطأ metalbiew.h
         run: |
-          mkdir -p ESP SDK
+          # فك ضغط المشروع
           unzip -o mini.zip || true
+          
+          # إنشاء المجلدات المتوقعة
+          mkdir -p ESP SDK
           
           # نقل كل شيء من المجلدات المتداخلة إلى المجلدات الرئيسية
           cp -R mini/mini/ESP/* ESP/ 2>/dev/null || cp -R mini/ESP/* ESP/ || true
           cp -R mini/mini/SDK/* SDK/ 2>/dev/null || cp -R mini/SDK/* SDK/ || true
           
-          # نقل ملف metalbiew.mm و metalbiew.h للواجهة إذا كانا بالداخل
-          find . -name "metalbiew.mm" -exec cp {} . \;
+          # الخطوة الأهم: التأكد من وجود metalbiew.h داخل مجلد ESP لكي ينجح الـ Import
           find . -name "metalbiew.h" -exec cp {} ESP/ \;
+          
+          # نقل ملف الـ mm الرئيسي للواجهة
+          find . -name "metalbiew.mm" -exec cp {} . \;
           
           # نقل ملفات التكوين
           find . -name "control" -exec cp {} . \;
@@ -44,5 +49,5 @@ jobs:
       - name: 📦 رفع الملف الناتج
         uses: actions/upload-artifact@v4
         with:
-          name: ESP_Fixed_Dylib
+          name: ESP_Fixed_Successfully
           path: packages/*.deb
