@@ -1,4 +1,4 @@
-name: Build ESP Pro Fixed
+name: Build ESP Master Fix
 
 on:
   workflow_dispatch:
@@ -10,7 +10,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Theos & iOS SDK
+      - name: Setup Theos & SDK
         run: |
           git clone --recursive https://github.com/theos/theos.git ~/theos
           curl -L https://github.com/theos/sdks/archive/master.zip -o sdks.zip
@@ -18,30 +18,31 @@ jobs:
           mv sdks-master/*.sdk ~/theos/sdks/
           echo "THEOS=$HOME/theos" >> $GITHUB_ENV
 
-      - name: ⚙️ استخراج وتنظيم ملفاتك اليدوية
+      - name: ⚙️ تنظيم المسارات وفك الضغط
         run: |
           mkdir -p ESP SDK
-          # فك الضغط وتجاهل أخطاء الرموز الصينية (حل Exit Code 50)
           unzip -o mini.zip || true
           
-          # نقل ملفات ESP والـ SDK 4.2 الخاصة بك لمكانها الصحيح
-          find . -path "*/ESP/*" -type f -exec cp {} ESP/ \; 2>/dev/null || true
-          find . -path "*/SDK/*" -type f -exec cp {} SDK/ \; 2>/dev/null || true
-          cp metalbiew.mm . 2>/dev/null || find . -name "metalbiew.mm" -exec cp {} . \;
+          # نقل كل شيء من المجلدات المتداخلة إلى المجلدات الرئيسية
+          cp -R mini/mini/ESP/* ESP/ 2>/dev/null || cp -R mini/ESP/* ESP/ || true
+          cp -R mini/mini/SDK/* SDK/ 2>/dev/null || cp -R mini/SDK/* SDK/ || true
           
-          # جلب ملفات الإعداد
-          find . -name "control" -exec cp {} . \; 2>/dev/null || true
-          find . -name "App.plist" -exec cp {} . \; 2>/dev/null || true
+          # نقل ملف metalbiew.mm و metalbiew.h للواجهة إذا كانا بالداخل
+          find . -name "metalbiew.mm" -exec cp {} . \;
+          find . -name "metalbiew.h" -exec cp {} ESP/ \;
+          
+          # نقل ملفات التكوين
+          find . -name "control" -exec cp {} . \;
+          find . -name "App.plist" -exec cp {} . \;
 
-      - name: 🚀 بدء البناء (Build)
+      - name: 🚀 بدء البناء
         run: |
           export THEOS=$HOME/theos
           chmod -R +x $THEOS/bin
-          # استخدام المجلد الحالي للبناء لضمان العثور على tweak.mk
           make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
-
-      - name: 📦 تحميل الملف الناتج
+          
+      - name: 📦 رفع الملف الناتج
         uses: actions/upload-artifact@v4
         with:
-          name: ESP_Dylib_Ready
+          name: ESP_Fixed_Dylib
           path: packages/*.deb
