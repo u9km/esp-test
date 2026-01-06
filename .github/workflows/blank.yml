@@ -1,4 +1,4 @@
-name: Build ESP Internal SDK
+name: Build Universal ESP Fixed
 
 on:
   workflow_dispatch:
@@ -14,34 +14,34 @@ jobs:
         run: |
           git clone --recursive https://github.com/theos/theos.git ~/theos
           curl -L -O https://github.com/theos/sdks/archive/refs/heads/master.zip
-          unzip master.zip
+          unzip -o master.zip
           mv sdks-master/*.sdk ~/theos/sdks/
           echo "THEOS=~/theos" >> $GITHUB_ENV
 
-      - name: ⚙️ Unzip Project & SDK
+      - name: ⚙️ Force Organize & Unzip
         run: |
-          # فك ملف المشروع الذي يحتوي الآن على الـ SDK داخله
-          if [ -f "mini.zip" ]; then
-            unzip -o mini.zip -d mini
-          fi
+          # [span_9](start_span)فك ضغط المشروع مع تجاهل أخطاء الرموز الصينية[span_9](end_span)
+          unzip -o mini.zip || true
           
-          # التأكد من وجود ملفات الإعداد في الواجهة لنجاح البناء
-          # سيتم البحث عنها داخل المجلد المفكوك ونقلها للواجهة
-          find mini -name "control" -exec mv {} . \;
-          find mini -name "App.plist" -exec mv {} . \;
+          # إنشاء مجلدات نظيفة للمترجم لتجنب مشاكل المسارات الطويلة
+          mkdir -p Project_ESP Project_SDK
           
-          echo "Checking internal structure..."
-          ls -R mini
+          # نقل محتويات ESP و SDK إلى المجلدات الجديدة برمجياً
+          cp -R mini/mini/ESP/* Project_ESP/ 2>/dev/null || cp -R ESP/* Project_ESP/ || true
+          cp -R mini/mini/SDK/* Project_SDK/ 2>/dev/null || cp -R SDK/* Project_SDK/ || true
+          
+          # التأكد من بقاء ملفات الإعداد في الواجهة
+          find . -name "control" -exec cp {} . \;
+          find . -name "App.plist" -exec cp {} . \;
 
       - name: Build Package
         run: |
           chmod +x $THEOS/bin/*
-          # تنفيذ البناء بناءً على المسارات الجديدة
+          # [span_10](start_span)تنفيذ البناء النهائي بصيغة rootless[span_10](end_span)
           make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
 
-      - name: Upload Artifact
-        if: success()
+      - name: Upload Finished Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Internal-SDK-ESP
+          name: Universal_ESP_Dylib
           path: packages/*.deb
