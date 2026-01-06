@@ -1,0 +1,9 @@
+Package: com.yourname.universal-esp
+Name: Universal ESP All Versions
+Depends: mobilesubstrate
+Version: 1.0.0
+Architecture: iphoneos-arm64
+Description: Professional ESP for All Game Versions (Non-Jailbreak Support)
+Maintainer: GeminiPartner
+Author: GeminiPartner
+Section: Tweaks

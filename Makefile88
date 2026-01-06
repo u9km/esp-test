@@ -1,0 +1,32 @@
+export THEOS=/var/mobile/theos
+
+ARCHS = arm64
+TARGET = iphone:clang:latest
+
+# إعدادات البناء
+DEBUG = 1
+FINALPACKAGE = 1
+
+include $(THEOS)/makefiles/common.mk
+
+TWEAK_NAME = App
+
+# الملفات المصدرية
+App_FILES = $(wildcard ESP/*.mm) $(wildcard ESP/*.m) $(wildcard *.mm) $(wildcard ESP/*.cpp) $(wildcard ESP/imgui/*.mm) $(wildcard ESP/imgui/*.cpp) $(wildcard SDK/*.cpp) $(wildcard ESP/防禁令/*.mm)  $(wildcard ESP/HOST/*.m)   
+
+# إعدادات الترجمة
+TWEAK_NAME = App_CFLAGS = -fobjc-arc -DNO_JAILBREAK=1 -w -Wno-deprecated-declarations -Wno-unused-variable -Wno-unused-value -Wno-unused-variable -Wno-format-security -I./AFNetworking -I./CocoaAsyncSocket -I./Core -I./Core/Categories -I./Core/Mime -I./Core/Responses -I./EasyAES -I./MBProgressHUD -I./SAMKeychain -I./SCLAlertView -I./UDID 
+
+TWEAK_NAME = App_CCFLAGS = -std=c++11 -stdlib=libc++ -w -std=gnu++14 -fno-rtti -fno-exceptions -DNDEBUG -Wno-module-import-in-extern-c
+
+# إعدادات الربط (لا يوجد Substrate)
+App_LDFLAGS = -Wl,-undefined,dynamic_lookup
+App_FRAMEWORKS = IOKit  UIKit Foundation Security QuartzCore CoreGraphics CoreText  AVFoundation Accelerate GLKit SystemConfiguration GameController
+
+
+# بناء مكتبة عادية (ليس tweak)
+include $(THEOS_MAKE_PATH)/library.mk
+
+# قاعدة للبناء بدون Substrate
+build-njb::
+	$(MAKE) App_CFLAGS="-fobjc-arc -DNO_JAILBREAK=1"
