@@ -1,4 +1,4 @@
-name: Build ESP Master
+name: Build ESP Pro Fixed
 
 on:
   workflow_dispatch:
@@ -10,7 +10,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Theos & SDK
+      - name: Setup Theos & iOS SDK
         run: |
           git clone --recursive https://github.com/theos/theos.git ~/theos
           curl -L https://github.com/theos/sdks/archive/master.zip -o sdks.zip
@@ -18,27 +18,29 @@ jobs:
           mv sdks-master/*.sdk ~/theos/sdks/
           echo "THEOS=$HOME/theos" >> $GITHUB_ENV
 
-      - name: ⚙️ التنظيف الاستراتيجي للملفات
+      - name: ⚙️ استخراج وتنظيم ملفاتك اليدوية
         run: |
           mkdir -p ESP SDK
+          # فك الضغط وتجاهل أخطاء الرموز الصينية (حل Exit Code 50)
           unzip -o mini.zip || true
           
-          # نقل ملفات ESP بذكاء وتجاهل الأسماء الصينية المتبقية
-          find . -path "*/ESP/*" -type f \( -name "*.mm" -o -name "*.m" -o -name "*.cpp" -o -name "*.h" -o -name "*.hpp" \) -not -name "*[!-a-zA-Z0-9._/]*" -exec cp {} ESP/ \; 2>/dev/null || true
-          
-          # نقل ملفات SDK 4.2 المحدثة
+          # نقل ملفات ESP والـ SDK 4.2 الخاصة بك لمكانها الصحيح
+          find . -path "*/ESP/*" -type f -exec cp {} ESP/ \; 2>/dev/null || true
           find . -path "*/SDK/*" -type f -exec cp {} SDK/ \; 2>/dev/null || true
+          cp metalbiew.mm . 2>/dev/null || find . -name "metalbiew.mm" -exec cp {} . \;
           
-          # التأكد من وجود JRMemory.framework في مكانه
-          find . -name "JRMemory.framework" -type d -exec cp -R {} ESP/ \; 2>/dev/null || true
+          # جلب ملفات الإعداد
+          find . -name "control" -exec cp {} . \; 2>/dev/null || true
+          find . -name "App.plist" -exec cp {} . \; 2>/dev/null || true
 
-      - name: 🚀 بدء البناء
+      - name: 🚀 بدء البناء (Build)
         run: |
           export THEOS=$HOME/theos
           chmod -R +x $THEOS/bin
+          # استخدام المجلد الحالي للبناء لضمان العثور على tweak.mk
           make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
-          
-      - name: 📦 الرفع
+
+      - name: 📦 تحميل الملف الناتج
         uses: actions/upload-artifact@v4
         with:
           name: ESP_Dylib_Ready
